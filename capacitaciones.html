@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Capacitaciones · SMC Montacargas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">SMC</span>
+      <span>
+        <span class="brand-name">SMC Montacargas</span>
+        <span class="brand-sub">Refacciones</span>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a href="index.html">Inicio</a>
+      <a href="conceptos.html">Conceptos</a>
+      <a href="https://app.organimi.com/public/organizations/630797d5f36d9a0c2904dac4/charts/63334c1b64dfc5c6c9de91fa/chart/view?pId=5f5c45b0f3475c3c7e5f84b5320946b3ab58f2936642d23510193ae79ce800d3" target="_blank" rel="noopener">Organigrama</a>
+      <a href="capacitaciones.html" aria-current="page">Capacitaciones</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero compact">
+    <div class="wrap">
+      <div>
+        <h1>Capacitaciones</h1>
+        <p class="lead">Diapositivas, hojas de Excel y videos para aprender a tu ritmo. Busca por el nombre del archivo.</p>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+          <input id="buscar" type="search" placeholder="Buscar material por nombre" aria-label="Buscar material por nombre" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="strip" aria-hidden="true"></div>
+  </div>
+
+  <div class="page">
+    <div class="wrap">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Secciones"></div>
+      <p class="hint" id="aviso" hidden></p>
+      <div id="resultado" aria-live="polite"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>SMC Montacargas · Portal interno del equipo de ventas</p>
+    <p>Refacciones para montacargas</p>
+  </div>
+</footer>
+
+<script>
+/* ------------------------------------------------------------------
+   AQUÍ AGREGAS TU MATERIAL
+   Sube los archivos al repositorio (por ejemplo en las carpetas
+   material/diapositivas, material/excel y material/videos) y agrega
+   una línea por archivo en la sección que corresponda:
+
+     { nombre: 'Nombre que verá el vendedor', archivo: 'ruta/o/URL', descripcion: 'opcional' }
+
+   • "archivo" puede ser una ruta del repositorio (material/excel/cotizador.xlsx)
+     o un enlace completo (https://...), por ejemplo de YouTube o Drive.
+   • Cuida mayúsculas, minúsculas y espacios: GitHub distingue entre ellos.
+     Conviene usar nombres sin espacios, como induccion-smc.pdf.
+   ------------------------------------------------------------------ */
+var SECCIONES = [
+  {
+    id: 'diapositivas',
+    titulo: 'Diapositivas y PDFs',
+    items: [
+      { nombre: 'Inducción SMC Montacargas', archivo: 'material/diapositivas/induccion-smc.pdf', descripcion: 'Ejemplo: reemplaza por tu archivo' },
+      { nombre: 'Catálogo de refacciones', archivo: 'material/diapositivas/catalogo-refacciones.pdf' }
+    ]
+  },
+  {
+    id: 'excels',
+    titulo: 'Excels',
+    items: [
+      { nombre: 'Cotizador de refacciones', archivo: 'material/excel/cotizador.xlsx' },
+      { nombre: 'Equivalencias entre marcas', archivo: 'material/excel/equivalencias.xlsx' }
+    ]
+  },
+  {
+    id: 'videos',
+    titulo: 'Videos',
+    items: [
+      { nombre: 'Cómo leer una placa de datos', archivo: 'https://www.youtube.com/', descripcion: 'Ejemplo: reemplaza por tu enlace' },
+      { nombre: 'Caso de venta: cambio de mástil', archivo: 'material/videos/caso-mastil.mp4' }
+    ]
+  }
+];
+
+(function () {
+  var caja = document.getElementById('buscar');
+  var tabsEl = document.getElementById('tabs');
+  var avisoEl = document.getElementById('aviso');
+  var resEl = document.getElementById('resultado');
+  var activa = 'todo';
+
+  function norm(t) {
+    return (t || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+  function el(tag, cls, texto) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (texto) e.textContent = texto;
+    return e;
+  }
+  function nombreArchivo(ruta) {
+    var limpio = (ruta || '').split('?')[0].split('#')[0];
+    try { return decodeURIComponent(limpio.split('/').pop()); } catch (e) { return limpio.split('/').pop(); }
+  }
+  function tipo(ruta) {
+    if (/^https?:\/\//i.test(ruta) && !/\.(pdf|pptx?|xlsx?|csv|mp4|webm|mov)(\?|#|$)/i.test(ruta)) return 'LINK';
+    var m = /\.([a-z0-9]+)(\?|#|$)/i.exec(ruta || '');
+    return m ? m[1].toUpperCase().slice(0, 4) : 'LINK';
+  }
+  function coincide(item, q) {
+    return !q || norm(item.nombre + ' ' + nombreArchivo(item.archivo)).indexOf(q) > -1;
+  }
+
+  function dibujarItem(item) {
+    var a = el('a', 'file');
+    a.href = item.archivo; a.target = '_blank'; a.rel = 'noopener';
+    a.appendChild(el('span', 'file-type', tipo(item.archivo)));
+    var txt = el('span', 'file-name', item.nombre);
+    if (item.descripcion) txt.appendChild(el('span', 'file-desc', item.descripcion));
+    a.appendChild(txt);
+    a.appendChild(el('span', 'file-go', /^(MP4|WEBM|MOV|LINK)$/.test(tipo(item.archivo)) ? 'Ver' : 'Abrir'));
+    var li = el('li');
+    li.appendChild(a);
+    return li;
+  }
+
+  function dibujar() {
+    var q = norm(caja.value.trim());
+    var crudo = caja.value.trim();
+
+    // Pestañas con conteo de resultados
+    tabsEl.textContent = '';
+    var total = 0;
+    var cuentas = {};
+    SECCIONES.forEach(function (s) {
+      cuentas[s.id] = s.items.filter(function (i) { return coincide(i, q); }).length;
+      total += cuentas[s.id];
+    });
+    var defs = [{ id: 'todo', titulo: 'Todo', n: total }].concat(SECCIONES.map(function (s) {
+      return { id: s.id, titulo: s.titulo, n: cuentas[s.id] };
+    }));
+    defs.forEach(function (d) {
+      var b = el('button', 'tab');
+      b.type = 'button'; b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', d.id === activa ? 'true' : 'false');
+      b.appendChild(document.createTextNode(d.titulo + ' '));
+      b.appendChild(el('span', 'n', String(d.n)));
+      b.addEventListener('click', function () { activa = d.id; dibujar(); });
+      tabsEl.appendChild(b);
+    });
+
+    // Aviso de coincidencias en otras secciones
+    avisoEl.hidden = true;
+    if (q && activa !== 'todo') {
+      var fuera = total - cuentas[activa];
+      if (fuera > 0) {
+        avisoEl.textContent = '';
+        avisoEl.appendChild(document.createTextNode(
+          'Hay ' + fuera + (fuera === 1 ? ' resultado' : ' resultados') + ' para “' + crudo + '” en otras secciones. '));
+        var ver = el('button', '', 'Ver en todas');
+        ver.type = 'button';
+        ver.addEventListener('click', function () { activa = 'todo'; dibujar(); });
+        avisoEl.appendChild(ver);
+        avisoEl.hidden = false;
+      }
+    }
+
+    // Resultados
+    resEl.textContent = '';
+    var visibles = SECCIONES.filter(function (s) { return activa === 'todo' || s.id === activa; });
+    var hay = false;
+    visibles.forEach(function (s) {
+      var items = s.items.filter(function (i) { return coincide(i, q); });
+      if (!items.length && (q || activa === 'todo')) return;
+      hay = true;
+      var g = el('section', 'group');
+      if (activa === 'todo') g.appendChild(el('h2', '', s.titulo));
+      if (!items.length) {
+        g.appendChild(el('p', 'empty', 'Aún no hay archivos en esta sección.'));
+      } else {
+        var ul = el('ul', 'files');
+        items.forEach(function (i) { ul.appendChild(dibujarItem(i)); });
+        g.appendChild(ul);
+      }
+      resEl.appendChild(g);
+    });
+    if (!hay) {
+      resEl.appendChild(el('p', 'empty', q
+        ? 'No encontramos archivos con ese nombre. Prueba con otra palabra.'
+        : 'Aún no hay material publicado.'));
+    }
+  }
+
+  caja.addEventListener('input', dibujar);
+  dibujar();
+})();
+</script>
+</body>
+</html>

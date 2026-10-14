@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conceptos · SMC Montacargas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">SMC</span>
+      <span>
+        <span class="brand-name">SMC Montacargas</span>
+        <span class="brand-sub">Refacciones</span>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a href="index.html">Inicio</a>
+      <a href="conceptos.html" aria-current="page">Conceptos</a>
+      <a href="https://app.organimi.com/public/organizations/630797d5f36d9a0c2904dac4/charts/63334c1b64dfc5c6c9de91fa/chart/view?pId=5f5c45b0f3475c3c7e5f84b5320946b3ab58f2936642d23510193ae79ce800d3" target="_blank" rel="noopener">Organigrama</a>
+      <a href="capacitaciones.html">Capacitaciones</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero compact">
+    <div class="wrap">
+      <div>
+        <h1>Conceptos</h1>
+        <p class="lead">Términos y componentes para entender qué pide un cliente y qué refacción le corresponde.</p>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+          <input id="buscar" type="search" placeholder="Buscar concepto" aria-label="Buscar concepto" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="strip" aria-hidden="true"></div>
+  </div>
+
+  <div class="page">
+    <div class="wrap">
+      <p class="summary" id="resumen" aria-live="polite"></p>
+      <div class="concepts" id="lista"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>SMC Montacargas · Portal interno del equipo de ventas</p>
+    <p>Refacciones para montacargas</p>
+  </div>
+</footer>
+
+<script>
+/* ------------------------------------------------------------------
+   AQUÍ AGREGAS TUS CONCEPTOS
+   Copia un bloque { ... }, pégalo debajo (con coma al final) y cambia
+   los datos. Solo "titulo" es obligatorio.
+
+   titulo       Nombre del concepto
+   categoria    (opcional) etiqueta corta, ej. 'Hidráulico'
+   descripcion  (opcional) texto; puedes usar saltos de línea con \n
+   imagen       (opcional) ruta de una imagen subida al repositorio,
+                ej. 'conceptos/img/mastil.jpg'
+   enlace       (opcional) ruta o URL de un PDF/página con más detalle,
+                ej. 'conceptos/mastil.pdf'
+   ------------------------------------------------------------------ */
+var CONCEPTOS = [
+  {
+    titulo: 'Mástil',
+    categoria: 'Estructura',
+    descripcion: 'Estructura vertical que guía el movimiento de las horquillas para elevar y bajar la carga.'
+  },
+  {
+    titulo: 'Placa de datos',
+    categoria: 'Identificación',
+    descripcion: 'Placa metálica del equipo con marca, modelo, número de serie y capacidad. Es el primer dato que se pide para cotizar una refacción.'
+  },
+  {
+    titulo: 'Número de parte',
+    categoria: 'Identificación',
+    descripcion: 'Código que identifica una refacción. Puede variar entre marcas, por eso se usan tablas de equivalencias.'
+  }
+];
+
+(function () {
+  var lista = document.getElementById('lista');
+  var resumen = document.getElementById('resumen');
+  var caja = document.getElementById('buscar');
+
+  function norm(t) {
+    return (t || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function el(tag, cls, texto) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (texto) e.textContent = texto;
+    return e;
+  }
+
+  function dibujar() {
+    var q = norm(caja.value.trim());
+    var res = CONCEPTOS.filter(function (c) {
+      return !q || norm(c.titulo + ' ' + (c.categoria || '') + ' ' + (c.descripcion || '')).indexOf(q) > -1;
+    });
+
+    lista.textContent = '';
+    if (!CONCEPTOS.length) {
+      resumen.textContent = '';
+      lista.appendChild(el('p', 'empty', 'Aún no hay conceptos. Agrégalos en la lista CONCEPTOS de conceptos.html.'));
+      return;
+    }
+    resumen.textContent = q
+      ? res.length + (res.length === 1 ? ' resultado' : ' resultados') + ' para “' + caja.value.trim() + '”'
+      : CONCEPTOS.length + (CONCEPTOS.length === 1 ? ' concepto' : ' conceptos');
+
+    if (!res.length) {
+      lista.appendChild(el('p', 'empty', 'No encontramos conceptos con ese nombre. Prueba con otra palabra.'));
+      return;
+    }
+
+    res.forEach(function (c) {
+      var card = el('article', 'concept');
+      if (c.imagen) {
+        var img = el('img');
+        img.src = c.imagen; img.alt = c.titulo; img.loading = 'lazy';
+        card.appendChild(img);
+      }
+      if (c.categoria) card.appendChild(el('span', 'pill', c.categoria)).style.alignSelf = 'flex-start';
+      card.appendChild(el('h3', '', c.titulo));
+      if (c.descripcion) card.appendChild(el('p', '', c.descripcion));
+      if (c.enlace) {
+        var a = el('a', 'btn', 'Ver más');
+        a.href = c.enlace; a.target = '_blank'; a.rel = 'noopener';
+        card.appendChild(a);
+      }
+      lista.appendChild(card);
+    });
+  }
+
+  caja.addEventListener('input', dibujar);
+  dibujar();
+})();
+</script>
+</body>
+</html>
